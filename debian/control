@@ -14,7 +14,7 @@ Architecture: all
 Depends: debhelper (>= 10),
          ${misc:Depends},
          ${perl:Depends},
-         rpm (>= 2.4.4-2),
+         rpm,
          dpkg-dev,
          make,
          cpio,
