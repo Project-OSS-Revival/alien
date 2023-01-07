@@ -3,7 +3,7 @@ Section: admin
 Priority: optional
 Build-Depends: debhelper-compat (= 13)
 Maintainer: Debian QA Group <packages@qa.debian.org>
-Standards-Version: 4.6.0
+Standards-Version: 4.6.2
 Rules-Requires-Root: no
 Vcs-Git: https://salsa.debian.org/debian/alien.git
 Vcs-Browser: https://salsa.debian.org/debian/alien
