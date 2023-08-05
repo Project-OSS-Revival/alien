@@ -773,6 +773,9 @@ sub arch {
 	elsif ($arch eq 'all') {
 		$arch='noarch';
 	}
+	elsif ($arch eq 'arm64') {
+		$arch='aarch64';
+	}
 	elsif ($arch eq 'ppc64el') {
 		$arch='ppc64le';
 	}
