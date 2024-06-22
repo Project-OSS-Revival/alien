@@ -1,11 +1,14 @@
-alien (8.95.7) UNRELEASED; urgency=medium
+alien (8.95.7) unstable; urgency=medium
 
+  * QA upload.
   * debian/copyright: use spaces rather than tabs to start continuation lines.
   * Update standards version to 4.6.2, no changes needed.
-  * Alien/Package/Rpm.pm: Map arm64 in deb to aarch64 in rpm.
-    This fixes conversion of arm64 deb packages. (Alois Klink)
 
- -- Debian Janitor <janitor@jelmer.uk>  Sat, 07 Jan 2023 06:13:35 -0000
+  [ Alois Klink ]
+  * Alien/Package/Rpm.pm: Map arm64 in deb to aarch64 in rpm.
+    This fixes conversion of arm64 deb packages.
+
+ -- Bastian Germann <bage@debian.org>  Sat, 22 Jun 2024 19:41:24 +0000
 
 alien (8.95.6) unstable; urgency=medium
 
