@@ -7,7 +7,7 @@ Copyright: 1996-1997	Christoph Lameter <clameter@debian.org>
            2001		Mark A. Hershberger <mah@everybody.org>
            1997-2011	Joey Hess <joeyh@debian.org>
 License: GPL-2+
- 	   
+
 Files: debian/*
 Copyright: 1996-1997	Christoph Lameter <clameter@debian.org>
            1997		Randolph Chung <rc42@cornell.edu>
