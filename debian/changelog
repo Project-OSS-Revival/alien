@@ -1,3 +1,10 @@
+alien (8.95.8) unstable; urgency=medium
+
+  * QA upload.
+  * debian/salsa-ci.yml: Add to provide CI tests for Salsa.
+
+ -- Daniel Alber Costa <danielrodrc@gmail.com>  Sun, 24 Nov 2024 19:49:09 -0300
+
 alien (8.95.7) unstable; urgency=medium
 
   * QA upload.
