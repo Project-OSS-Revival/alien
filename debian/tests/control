@@ -1,5 +1,5 @@
 Test-Command: alien --help 2>&1 | grep "^Usage: alien"
 Restrictions: allow-stderr, superficial
 
-Tests: convert_deb_to_rpm.sh
+Tests: convert-deb-to-rpm.sh
 Restrictions: allow-stderr, superficial
