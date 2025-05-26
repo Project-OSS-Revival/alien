@@ -176,6 +176,8 @@ sub getcontrolfile {
 			$controlcomp = 'gzip -dc';
 		} elsif ($controlmember eq 'control.tar.xz') {
 			$controlcomp = 'xz -dc';
+		} elsif ($controlmember eq 'control.tar.zst') {
+			$controlcomp = 'zstd -dc';
 		} elsif ($controlmember eq 'control.tar') {
 			$controlcomp = 'cat';
 		} else {
@@ -210,6 +212,8 @@ sub get_datamember_cmd {
 		$datacomp = 'xz -dc';
 	} elsif ($datamember eq 'data.tar.lzma') {
 		$datacomp = 'xz -dc';
+	} elsif ($datamember eq 'data.tar.zst') {
+		$datacomp = 'zstd -dc';
 	} elsif ($datamember eq 'data.tar') {
 		$datacomp = 'cat';
 	} else {
