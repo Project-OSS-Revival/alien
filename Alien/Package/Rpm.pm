@@ -8,7 +8,9 @@ Alien::Package::Rpm - an object that represents a rpm package
 
 package Alien::Package::Rpm;
 use strict;
-use base qw(Alien::Package);
+use Exporter qw(import);
+our @EXPORT_OK = qw(arch);
+use base qw(Alien::Package Exporter);
 
 =head1 DESCRIPTION
 
