@@ -262,17 +262,6 @@ sub unpack {
 	return 1;
 }
 
-sub arch {
-    my $self = shift; 
-    # $self is the Alien::Package::Tgz object instance.
-
-    # Call the imported 'arch' function from Alien::Package::Rpm.
-    # Pass $self as the first argument, so the Rpm.pm 'arch' function
-    # (which is written as a method) receives it as its own $this/$self.
-    # Pass any other arguments received by Tgz::arch using @_.
-    return Alien::Package::Rpm::arch($self, @_);
-}
-
 # Helper function for _format_slack_desc
 sub _format_slack_desc_section {
     my ($pkgname, $text_content, $num_target_lines, $max_total_line_length) = @_;
@@ -490,7 +479,7 @@ Build a tgz.
 
 sub build {
 	my $this=shift;
-	my $arch = $this->arch();
+	my $arch = Alien::Package::Rpm::arch($this, @_);
 	my $tgz=$this->name."-".$this->version."-".$arch."-1_alien.tgz";
 	if (-x "/sbin/makepkg") {
 		my $v=$Alien::Package::verbose;
