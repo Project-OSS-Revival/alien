@@ -483,22 +483,22 @@ sub prep {
 	if ($this->usescripts) {
 		if ($this->preinst) {
 			print OUT "\%pre\n";
-			print OUT $this->preinst."\n";
+			print OUT escape_percents($this->preinst)."\n";
 			print OUT "\n";
 		}
 		if ($this->postinst) {
 			print OUT "\%post\n";
-			print OUT $this->postinst."\n";
+			print OUT escape_percents($this->postinst)."\n";
 			print OUT "\n";
 		}
 		if ($this->prerm) {
 			print OUT "\%preun\n";
-			print OUT $this->prerm."\n";
+			print OUT escape_percents($this->prerm)."\n";
 			print OUT "\n";
 		}
 		if ($this->postrm) {
 			print OUT "\%postun\n";
-			print OUT $this->postrm."\n";
+			print OUT escape_percents($this->postrm)."\n";
 			print OUT "\n";
 		}
 	}
@@ -659,6 +659,7 @@ sub _script_helper {
 		$this->{$script} = $value;
 	}
 	$this->{$script} = shift if @_;
+	return $this->{$script};
 
 	# get
 	return unless defined wantarray; # optimization
@@ -693,6 +694,11 @@ sub preinst {
 sub prerm {
 	my $this=shift;
 	$this->_script_helper('prerm', @_);
+}
+sub escape_percents {
+	my $s=shift;
+	$s =~ s/\%/\%\%/g;
+	return $s;
 }
 
 =item arch
