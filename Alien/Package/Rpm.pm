@@ -463,9 +463,8 @@ sub prep {
 	# Write out the spec file.
 	my $spec="$dir/".$this->name."-".$this->version."-".$this->release.".spec";
 	open (OUT, ">$spec") || die "$spec: $!";
-	my $pwd=`pwd`;
-	chomp $pwd;
-	print OUT "Buildroot: $pwd/$dir\n"; # must be absolute dirname
+	# Note: Buildroot is passed via --buildroot command line option
+	# to handle paths with spaces correctly
 	print OUT "Name: ".$this->name."\n";
 	print OUT "Version: ".$this->version."\n";
 	print OUT "Release: ".$this->release."\n";
@@ -574,7 +573,7 @@ sub build {
 	$opts.=" $ENV{RPMBUILDOPT}" if exists $ENV{RPMBUILDOPT};
 	my $pwd=`pwd`;
 	chomp $pwd;
-	my $command="cd $dir; $buildcmd --buildroot='$pwd/$dir' -bb $opts '".$this->name."-".$this->version."-".$this->release.".spec'";
+	my $command="cd '$dir'; $buildcmd --buildroot='$pwd/$dir' -bb $opts '".$this->name."-".$this->version."-".$this->release.".spec'";
 	my $log=$this->runpipe(1, "$command 2>&1");
 	if ($?) {
 		die "Package build failed. Here's the log of the command ($command):\n", $log;
