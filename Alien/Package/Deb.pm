@@ -254,19 +254,27 @@ sub scan {
 	for (my $i=0; $i <= $#control; $i++) {
 		$_ = $control[$i];
 		chomp;
-		if (/^(\w.*?):\s+(.*)/) {
+		if (/^(\w.*?):\s*(.*)/) {
 			# Really old debs might have oddly capitalized
 			# field names.
 			$field=ucfirst(lc($1));
 			if (exists $fieldtrans{$field}) {
 				$field=$fieldtrans{$field};
-				$this->$field($2);
+				my $value = $2;
+				# Only set field if value is non-empty.
+				# For Description, empty first line means
+				# the actual text starts on next line.
+				$this->$field($value) if length $value;
 			}
 		}
 		elsif (/^ / && $field eq 'summary') {
 			# Handle extended description.
 			s/^ //g;
 			$_="" if $_ eq ".";
+			# If summary is empty, use first line of extended description
+			if (!defined $this->summary || !length $this->summary) {
+				$this->summary($_);
+			}
 			$description.="$_\n";
 		}
 	}
