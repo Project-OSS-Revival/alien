@@ -15,7 +15,7 @@ sub MY::libscan {
 sub MY::postamble {
 	return q{
 
-VER=$(shell perl -e '$$_=<>;print m/\((.*?)\)/'<debian/changelog)
+VER=$(shell perl -e '$$_=<>;print m/\((.*?)\)/'<ChangeLog)
 
 all:: extra_build
 clean:: extra_build
