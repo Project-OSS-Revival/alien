@@ -489,7 +489,10 @@ sub build {
 		$Alien::Package::verbose=$v;
 	}
 	else {
-		die "Sorry, I cannot generate the .tgz file because /sbin/makepkg is not present.\n"
+		# Fallback to plain tar when makepkg is not available
+		# Use same method as makepkg: strip ./ prefix via sed to match Slackware format
+		$this->do("cd ".$this->unpacked_tree."; find ./ | LC_COLLATE=C sort | sed '2,\$s,^\\./,,' | tar --no-recursion -T - -czf ../$tgz")
+			or die "Package build failed";
 	}
 	return $tgz;
 }
