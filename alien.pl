@@ -6,15 +6,16 @@ alien - Convert or install an alien binary package
 
 =head1 SYNOPSIS
 
- alien [--to-deb] [--to-rpm] [--to-tgz] [--to-slp] [options] file [...]
+ alien [--to-deb] [--to-rpm] [--to-tgz] [--to-slp] [--to-pacman] [options] file [...]
 
 =head1 DESCRIPTION
 
 B<alien> is a program that converts between Red Hat rpm, Debian deb,
-Stampede slp, Slackware tgz, and Solaris pkg file formats. If you want to
-use a package from another linux distribution than the one you have
-installed on your system, you can use B<alien> to convert it to your preferred
-package format and install it. It also supports LSB packages.
+Stampede slp, Slackware tgz, Solaris pkg, and Arch Linux pacman file
+formats. If you want to use a package from another linux distribution
+than the one you have installed on your system, you can use B<alien> to
+convert it to your preferred package format and install it. It also
+supports LSB packages.
 
 =head1 WARNING
 
@@ -109,6 +110,15 @@ Make slp packages.
 =item B<-p>, B<--to-pkg>
 
 Make Solaris pkg packages.
+
+=item B<-a>, B<--to-pacman>
+
+Make Arch Linux pacman packages (.pkg.tar.zst by default).
+
+=item B<--pacman-compression=>I<type>
+
+Set the compression type for generated pacman packages. Valid types:
+zst (default), xz, gz, bz2, lz4, lzo.
 
 =item B<-i>, B<--install>
 
@@ -296,6 +306,7 @@ use Alien::Package::Tgz;
 use Alien::Package::Slp;
 use Alien::Package::Pkg;
 use Alien::Package::Lsb;
+use Alien::Package::Pacman;
 
 # Display alien's version number.
 sub version {
@@ -326,6 +337,9 @@ Usage: alien [options] file [...]
   -r, --to-rpm              Generate a Red Hat rpm package.
       --to-slp              Generate a Stampede slp package.
   -l, --to-lsb              Generate a LSB package.
+  -a, --to-pacman           Generate an Arch Linux pacman package.
+      --pacman-compression=<type>
+                             Compression for pacman output (zst, xz, gz, bz2, lz4, lzo).
   -t, --to-tgz              Generate a Slackware tgz package.
      Enables these options:
        --description=<desc> Specify package description.
@@ -349,7 +363,7 @@ EOF
 # Start by processing the parameters.
 my (%destformats, $generate, $install, $single, $scripts, $patchfile,
     $nopatch, $tgzdescription, $tgzversion, $keepversion, $fixperms,
-    $test, $anypatch, $target);
+    $test, $anypatch, $target, $pacmancompression);
 my $versionbump=1;
 
 # Bundling is nice anyway, and it is required or Getopt::Long will confuse
@@ -363,6 +377,8 @@ GetOptions(
 	"to-tgz|t"       => sub { $destformats{tgz}=1 },
 	"to-slp"         => sub { $destformats{slp}=1 },
 	"to-pkg|p"       => sub { $destformats{pkg}=1 },
+	"to-pacman|a"    => sub { $destformats{pacman}=1 },
+	"pacman-compression=s" => \$pacmancompression,
 	"test|T"         => \$test,
 	"generate|g"     => \$generate,
 	"install|i"      => \$install,
@@ -401,6 +417,9 @@ if ($patchfile && ! -f $patchfile) {
 if ($patchfile && $nopatch) {
 	die "The options --nopatch and --patchfile cannot be used together.\n";
 }
+if (defined $pacmancompression && $pacmancompression !~ /^(?:zst|xz|gz|bz2|lz4|lzo)$/) {
+	die "Invalid pacman compression type \"$pacmancompression\". Valid: zst, xz, gz, bz2, lz4, lzo\n";
+}
 unless (@ARGV) {
 	print STDERR "You must specify a file to convert.\n\n";
 	usage();
@@ -436,6 +455,10 @@ foreach my $file (@ARGV) {
 	}
 	elsif (Alien::Package::Deb->checkfile($file)) {
 		$package=Alien::Package::Deb->new(filename => $file);
+	}
+	elsif (Alien::Package::Pacman->checkfile($file)) {
+		$package=Alien::Package::Pacman->new(filename => $file);
+		$package->compression($pacmancompression) if defined $pacmancompression;
 	}
 	elsif (Alien::Package::Tgz->checkfile($file)) {
 		$package=Alien::Package::Tgz->new(filename => $file);
@@ -474,6 +497,11 @@ foreach my $file (@ARGV) {
 		# Howver, generate build tree even if the format is
 		# unchanged.
 		if ($package->origformat ne $format || $generate) {
+			# Set pacman compression if converting to pacman.
+			if ($format eq 'pacman' && defined $pacmancompression) {
+				$package->compression($pacmancompression);
+			}
+
 			# Only unpack once.
 			if ($package->unpacked_tree) {
 				$package->cleantree;
