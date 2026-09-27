@@ -6,15 +6,16 @@ alien - Convert or install an alien binary package
 
 =head1 SYNOPSIS
 
- alien [--to-deb] [--to-rpm] [--to-tgz] [--to-slp] [options] file [...]
+ alien [--to-deb] [--to-rpm] [--to-tgz] [--to-slp] [--to-pacman] [options] file [...]
 
 =head1 DESCRIPTION
 
 B<alien> is a program that converts between Red Hat rpm, Debian deb,
-Stampede slp, Slackware tgz, and Solaris pkg file formats. If you want to
-use a package from another linux distribution than the one you have
-installed on your system, you can use B<alien> to convert it to your preferred
-package format and install it. It also supports LSB packages.
+Stampede slp, Slackware tgz, Solaris pkg, and Arch Linux pacman file
+formats. If you want to use a package from another linux distribution
+than the one you have installed on your system, you can use B<alien> to
+convert it to your preferred package format and install it. It also
+supports LSB packages.
 
 =head1 WARNING
 
@@ -109,6 +110,28 @@ Make slp packages.
 =item B<-p>, B<--to-pkg>
 
 Make Solaris pkg packages.
+
+=item B<-a>, B<--to-pacman>
+
+Make Arch Linux pacman packages (.pkg.tar.zst by default).
+
+=item B<--pacman-compression=>I<type>
+
+Set the compression type for generated pacman packages. Valid types:
+zst (default), xz, gz, bz2, lz4, lzo.
+
+=item B<--name=>I<name>
+
+Override the package name with the given value. Useful when the
+original package name conflicts with an existing package on the
+target system.
+
+=item B<--pkg-name>
+
+Derive the package name from the input filename instead of from
+the package metadata. Strips extensions, version numbers, and
+platform/architecture suffixes. For example,
+"opencode-desktop-linux-amd64.deb" becomes "opencode-desktop".
 
 =item B<-i>, B<--install>
 
@@ -296,6 +319,7 @@ use Alien::Package::Tgz;
 use Alien::Package::Slp;
 use Alien::Package::Pkg;
 use Alien::Package::Lsb;
+use Alien::Package::Pacman;
 
 # Display alien's version number.
 sub version {
@@ -326,6 +350,11 @@ Usage: alien [options] file [...]
   -r, --to-rpm              Generate a Red Hat rpm package.
       --to-slp              Generate a Stampede slp package.
   -l, --to-lsb              Generate a LSB package.
+  -a, --to-pacman           Generate an Arch Linux pacman package.
+      --pacman-compression=<type>
+                             Compression for pacman output (zst, xz, gz, bz2, lz4, lzo).
+      --name=<name>          Override the package name.
+      --pkg-name             Derive package name from input filename.
   -t, --to-tgz              Generate a Slackware tgz package.
      Enables these options:
        --description=<desc> Specify package description.
@@ -349,7 +378,8 @@ EOF
 # Start by processing the parameters.
 my (%destformats, $generate, $install, $single, $scripts, $patchfile,
     $nopatch, $tgzdescription, $tgzversion, $keepversion, $fixperms,
-    $test, $anypatch, $target);
+    $test, $anypatch, $target, $pacmancompression,
+    $customname, $usepkgname);
 my $versionbump=1;
 
 # Bundling is nice anyway, and it is required or Getopt::Long will confuse
@@ -363,6 +393,10 @@ GetOptions(
 	"to-tgz|t"       => sub { $destformats{tgz}=1 },
 	"to-slp"         => sub { $destformats{slp}=1 },
 	"to-pkg|p"       => sub { $destformats{pkg}=1 },
+	"to-pacman|a"    => sub { $destformats{pacman}=1 },
+	"pacman-compression=s" => \$pacmancompression,
+	"name=s"         => \$customname,
+	"pkg-name"       => \$usepkgname,
 	"test|T"         => \$test,
 	"generate|g"     => \$generate,
 	"install|i"      => \$install,
@@ -401,6 +435,9 @@ if ($patchfile && ! -f $patchfile) {
 if ($patchfile && $nopatch) {
 	die "The options --nopatch and --patchfile cannot be used together.\n";
 }
+if (defined $pacmancompression && $pacmancompression !~ /^(?:zst|xz|gz|bz2|lz4|lzo)$/) {
+	die "Invalid pacman compression type \"$pacmancompression\". Valid: zst, xz, gz, bz2, lz4, lzo\n";
+}
 unless (@ARGV) {
 	print STDERR "You must specify a file to convert.\n\n";
 	usage();
@@ -437,6 +474,10 @@ foreach my $file (@ARGV) {
 	elsif (Alien::Package::Deb->checkfile($file)) {
 		$package=Alien::Package::Deb->new(filename => $file);
 	}
+	elsif (Alien::Package::Pacman->checkfile($file)) {
+		$package=Alien::Package::Pacman->new(filename => $file);
+		$package->compression($pacmancompression) if defined $pacmancompression;
+	}
 	elsif (Alien::Package::Tgz->checkfile($file)) {
 		$package=Alien::Package::Tgz->new(filename => $file);
 		$package->description($tgzdescription) if defined $tgzdescription;
@@ -469,11 +510,42 @@ foreach my $file (@ARGV) {
 		$package->incrementrelease($versionbump);
 	}
 	
+	# Override package name if requested.
+	if (defined $customname) {
+		$package->name($customname);
+	}
+	elsif ($usepkgname) {
+		# Derive package name from the input filename.
+		my $basename=$file;
+		$basename=~s{^.*/}{}; # strip directory
+		$basename=~s/\.(?:deb|rpm|tgz|tar\.gz|tar\.xz|tar\.zst|tar\.bz2|slp|pkg)$//i;
+		# Strip version numbers at the end (e.g., -1.2.3, -2.0.6)
+		$basename=~s/-[vV]?\d[\w.]*$//;
+		# Strip platform/arch suffixes (e.g., -linux-amd64, -x86_64, -i386)
+		$basename=~s/-(?:linux|unix|win|win32|win64|macos|mac|osx|darwin)$//i;
+		$basename=~s/-(?:amd64|x86_64|x86-64|i386|i486|i586|i686|arm64|aarch64|armv7h?|armhf?|ppc64le?|powerpc|sparc|alpha|m68k|riscv64|loongarch64|mips64?)$//i;
+		$basename=~s/-(?:linux|unix|win|win32|win64|macos|mac|osx|darwin)$//i;
+		# Strip trailing dashes/dots
+		$basename=~s/[-.]+$//;
+		$basename=~s/^[-.]+//;
+		if (length $basename) {
+			$package->name($basename);
+		}
+		else {
+			print STDERR "Warning: could not derive package name from \"$file\"; using metadata.\n";
+		}
+	}
+
 	foreach my $format (keys %destformats) {
 		# Skip conversion if package is already the correct format.
 		# Howver, generate build tree even if the format is
 		# unchanged.
 		if ($package->origformat ne $format || $generate) {
+			# Set pacman compression if converting to pacman.
+			if ($format eq 'pacman' && defined $pacmancompression) {
+				$package->compression($pacmancompression);
+			}
+
 			# Only unpack once.
 			if ($package->unpacked_tree) {
 				$package->cleantree;
